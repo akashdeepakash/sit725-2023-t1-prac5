@@ -1,63 +1,72 @@
 let express = require('express');
 let app = express();
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://akashdeepakashdeep271291:Ar1un%408ha@cluster0.3t94zdr.mongodb.net/?retryWrites=true&w=majority";
 let port = process.env.port || 3000;
+let collection;
 
 app.use(express.static(__dirname + '/'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 
-app.get('/', (req, res)=>{
+const client = new MongoClient(uri, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
+});
+
+async function runDBConnection() {
+    try {
+        await client.connect();
+       collection = client.db().collection('Cat');
+       console.log(collection);
+    } catch (ex) {
+        console.error(ex);
+    }
+}
+
+app.get('/', function (req, res) {
     res.render('index.html');
 });
 
-app.get('/addTwoNumbers',(req,res)=>{
-    //let payLoad = {}
-    let statusCode = 200;
-    let sucessMesssage = 'successful';
-    let number1 = req.query.number1; // 99
-    let number2 = req.query.number2; // 40
-    let result = parseInt(number1) + parseInt(number2); // convert them to int
-
-    res.json({
-        message:sucessMesssage, 
-        code: statusCode, 
-        data: result
+app.get('/api/cats', (req,res)=> {
+    getAllCats((err,result)=>{
+        if(!err) {
+            res.json({statusCode:200, data:result, message:'get all cats successful'});
+        }
     });
 });
 
-app.listen(port, ()=>{
-    //this is the logic that will be fired upon server start
-    console.log('server started 2');
-}); 
+app.post('/api/cat', (req,res)=>{
+    let cat = req.body;
+    postCat(cat, (err, result) => {
+        if(!err) {
+            res.json({statusCode:201, data:result, message:'success'});
 
-
-
-
-/*let express = require('express');
-let app = express();
-let port = process.env.port || 3000;
-
-app.use(express.static(__dirname + '/'));
-
-app.get('/', (req,res)=>{
-    res.render('index.html');
-});
-
-app.get('/addTwoNumbers',(req,res)=>{
-    //let payLoad = {}
-    let statusCode = 200;
-    let sucessMesssage = 'successful';
-    let number1 = req.query.number1; // 99
-    let number2 = req.query.number2; // 40
-    let result = parseInt(number1) + parseInt(number2); // convert them to int
-
-    res.json({
-        message:sucessMesssage, 
-        code: statusCode, 
-        data: result
+        }
     });
 });
+
+/*app.get('/api/cat', (req,res)=> {
+    getAllCats((err,result)=>{
+        if(!err) {
+            res.json({statusCode:200, data:result, message:'get cat successful'});
+        }
+    });
+});*/
+
+function postCat(cat,callback) {
+    collection.insertOne(cat,callback);
+}
+
+function getAllCats(callback) {
+    collection.find({}).toArray(callback);
+}
 
 app.listen(port, () => {
-    console.log('server started-2');
+    console.log('express server started');
+    runDBConnection();
 });
-*/
